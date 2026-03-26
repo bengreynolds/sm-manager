@@ -83,6 +83,16 @@ def bootstrap_database(config: AppConfig) -> None:
                 updated_at TEXT NOT NULL,
                 UNIQUE(platform, account_label, token_name)
             );
+
+            CREATE TABLE IF NOT EXISTS oauth_states (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                platform TEXT NOT NULL,
+                account_label TEXT NOT NULL,
+                state TEXT NOT NULL UNIQUE,
+                redirect_uri TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                consumed_at TEXT
+            );
             """
         )
         connection.commit()
@@ -289,6 +299,54 @@ def get_platform_token_metadata(config: AppConfig, platform: str, account_label:
             (platform, account_label),
         ).fetchall()
         return [dict(row) for row in rows]
+
+
+def create_oauth_state(
+    config: AppConfig,
+    platform: str,
+    account_label: str,
+    state: str,
+    redirect_uri: str,
+) -> None:
+    with closing(_connect(str(config.db_path))) as connection:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO oauth_states (platform, account_label, state, redirect_uri, created_at, consumed_at)
+            VALUES (?, ?, ?, ?, ?, NULL)
+            """,
+            (platform, account_label, state, redirect_uri, _utc_now()),
+        )
+        connection.commit()
+
+
+def get_oauth_state(config: AppConfig, state: str) -> dict[str, object] | None:
+    with closing(_connect(str(config.db_path))) as connection:
+        cursor = connection.cursor()
+        row = cursor.execute(
+            """
+            SELECT platform, account_label, state, redirect_uri, created_at, consumed_at
+            FROM oauth_states
+            WHERE state = ?
+            LIMIT 1
+            """,
+            (state,),
+        ).fetchone()
+        return dict(row) if row is not None else None
+
+
+def mark_oauth_state_consumed(config: AppConfig, state: str) -> None:
+    with closing(_connect(str(config.db_path))) as connection:
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            UPDATE oauth_states
+            SET consumed_at = ?
+            WHERE state = ? AND consumed_at IS NULL
+            """,
+            (_utc_now(), state),
+        )
+        connection.commit()
 
 
 def list_recent_jobs(config: AppConfig, limit: int = 10) -> list[dict[str, object]]:

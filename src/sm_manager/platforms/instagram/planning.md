@@ -188,7 +188,9 @@ Status: partial
 
 Status: partial
 
-- auth connection pending
+- auth connection partially implemented
+- auth URL generation implemented
+- auth callback exchange implemented
 - auth readiness inspection implemented
 - token metadata storage implemented
 - media upload and publish flow pending
@@ -254,6 +256,8 @@ Verified local commands at the current stage:
 - `python -m sm_manager import-local-credentials --platform instagram`
 - `python -m sm_manager secret-store-status --platform instagram`
 - `python -m sm_manager instagram-auth-status --account ig_test_account_1`
+- `python -m sm_manager instagram-oauth-url --account ig_test_account_1`
+- `python -m sm_manager instagram-oauth-exchange --code YOUR_CODE --state YOUR_STATE`
 - `python -m sm_manager store-platform-token --platform instagram --account ig_test_account_1 --name access_token --value test_access_token_value --expires-at 2026-12-31T00:00:00+00:00`
 - `python -m sm_manager instagram-dry-run --account ig_test_account_1 --caption "Initial dry-run post" --source-username source_creator`
 - `python -m sm_manager status`
@@ -274,7 +278,9 @@ Current behavior of the auth-readiness path:
 - falls back to an encrypted local vault file when keyring is unavailable
 - tracks token metadata in SQLite without storing raw token values there
 - reports whether Meta app configuration env vars are present
-- does not start OAuth or exchange tokens yet
+- can generate a local OAuth URL and accept the callback
+- can exchange the returned authorization code for an access token and store it locally
+- still requires real Meta app credentials and a reachable redirect URI to complete a live connection
 
 ## References
 

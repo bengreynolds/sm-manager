@@ -17,7 +17,11 @@ from sm_manager.core.db import (
 from sm_manager.core.log_config import configure_logging, get_logger
 from sm_manager.core.secret_store import get_secret_store
 from sm_manager.platforms.instagram.adapter import InstagramAdapter, InstagramDryRunRequest
-from sm_manager.platforms.instagram.auth import get_instagram_auth_status
+from sm_manager.platforms.instagram.auth import (
+    build_instagram_authorize_url,
+    exchange_instagram_code,
+    get_instagram_auth_status,
+)
 
 
 LOGGER = get_logger(__name__)
@@ -100,6 +104,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show Instagram auth readiness for a local account.",
     )
     auth_status_parser.add_argument("--account", required=True, help="Account label.")
+
+    oauth_url_parser = subparsers.add_parser(
+        "instagram-oauth-url",
+        help="Generate the Instagram OAuth URL for a configured account.",
+    )
+    oauth_url_parser.add_argument("--account", required=True, help="Account label.")
+
+    oauth_exchange_parser = subparsers.add_parser(
+        "instagram-oauth-exchange",
+        help="Exchange an Instagram OAuth code for a stored access token.",
+    )
+    oauth_exchange_parser.add_argument("--code", required=True, help="Authorization code returned by Instagram.")
+    oauth_exchange_parser.add_argument("--state", required=True, help="State value created during auth URL generation.")
 
     dry_run_parser = subparsers.add_parser(
         "instagram-dry-run",
@@ -243,6 +260,20 @@ def handle_instagram_auth_status(config: AppConfig, account: str) -> int:
     return 0
 
 
+def handle_instagram_oauth_url(config: AppConfig, account: str) -> int:
+    config.ensure_directories()
+    bootstrap_database(config)
+    _json_dump(build_instagram_authorize_url(config, account))
+    return 0
+
+
+def handle_instagram_oauth_exchange(config: AppConfig, code: str, state: str) -> int:
+    config.ensure_directories()
+    bootstrap_database(config)
+    _json_dump(exchange_instagram_code(config, code=code, state=state))
+    return 0
+
+
 def handle_instagram_dry_run(
     config: AppConfig,
     account: str,
@@ -324,6 +355,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.command == "instagram-auth-status":
         return handle_instagram_auth_status(config, args.account)
+    if args.command == "instagram-oauth-url":
+        return handle_instagram_oauth_url(config, args.account)
+    if args.command == "instagram-oauth-exchange":
+        return handle_instagram_oauth_exchange(config, args.code, args.state)
     if args.command == "instagram-dry-run":
         return handle_instagram_dry_run(
             config=config,

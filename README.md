@@ -31,12 +31,13 @@ The repository now includes a runnable Instagram-first local skeleton with:
 - account sync for Instagram labels and usernames
 - credential import into secure local storage
 - token metadata storage and Instagram auth-readiness checks
+- OAuth URL generation and callback handling for Instagram app connection
 - Instagram dry-run publish validation that records audit history without calling the Instagram API
 - minimal FastAPI control-plane endpoints for health, accounts, and recent jobs
 
 What is not implemented yet:
 
-- real Instagram OAuth
+- a live Meta-app-tested OAuth handshake against your own production app credentials
 - real Instagram media upload or publish calls
 - scheduler execution
 - settings UI
@@ -113,6 +114,74 @@ For initial local testing:
 
 This is a temporary local-testing convention. Long term, platform tokens and encrypted secret storage remain the intended implementation path.
 
+## Add Instagram Accounts
+
+To add another Instagram account, edit [`.platform_credentials.local.json`](c:/Users/reynoben/Documents/sm-manager/.platform_credentials.local.json) and add another object under `instagram`.
+
+Example:
+
+```json
+{
+  "instagram": [
+    {
+      "label": "ig_test_account_1",
+      "username": "instagram_username_here",
+      "password": "replace_with_local_test_password"
+    },
+    {
+      "label": "ig_test_account_2",
+      "username": "second_instagram_username_here",
+      "password": "replace_with_second_local_test_password"
+    }
+  ]
+}
+```
+
+The tracked reference file is [`.platform_credentials.example.json`](c:/Users/reynoben/Documents/sm-manager/.platform_credentials.example.json).
+
+After editing the local file, run:
+
+```powershell
+.\.venv\Scripts\python.exe -m sm_manager sync-local-accounts --platform instagram
+.\.venv\Scripts\python.exe -m sm_manager import-local-credentials --platform instagram
+```
+
+## Instagram OAuth Setup
+
+Use [instagram_oauth.example.env](c:/Users/reynoben/Documents/sm-manager/config/instagram_oauth.example.env) as the environment template.
+
+Minimum variables:
+
+```powershell
+$env:SM_MANAGER_INSTAGRAM_APP_ID='your_meta_app_id'
+$env:SM_MANAGER_INSTAGRAM_APP_SECRET='your_meta_app_secret'
+$env:SM_MANAGER_INSTAGRAM_REDIRECT_URI='http://127.0.0.1:8000/instagram/oauth/callback'
+```
+
+Then start the local control plane:
+
+```powershell
+.\.venv\Scripts\python.exe -m sm_manager serve
+```
+
+Generate the auth URL for an account:
+
+```powershell
+.\.venv\Scripts\python.exe -m sm_manager instagram-oauth-url --account ig_test_account_1
+```
+
+Or open the local route directly:
+
+```text
+http://127.0.0.1:8000/instagram/oauth/start?account=ig_test_account_1&redirect=true
+```
+
+The callback route is:
+
+```text
+http://127.0.0.1:8000/instagram/oauth/callback
+```
+
 ## Recommended MVP Stack
 
 - Python
@@ -172,6 +241,18 @@ Inspect Instagram auth readiness:
 .\.venv\Scripts\python.exe -m sm_manager instagram-auth-status --account ig_test_account_1
 ```
 
+Generate an Instagram OAuth URL:
+
+```powershell
+.\.venv\Scripts\python.exe -m sm_manager instagram-oauth-url --account ig_test_account_1
+```
+
+Exchange an Instagram OAuth code manually if needed:
+
+```powershell
+.\.venv\Scripts\python.exe -m sm_manager instagram-oauth-exchange --code YOUR_CODE --state YOUR_STATE
+```
+
 Store a local platform token for testing metadata flow:
 
 ```powershell
@@ -202,3 +283,5 @@ Available endpoints:
 - `GET /accounts`
 - `GET /jobs/recent`
 - `GET /instagram/auth/status?account=...`
+- `GET /instagram/oauth/start?account=...`
+- `GET /instagram/oauth/callback`
