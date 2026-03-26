@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sm-manager"
+version = "0.1.0"
+description = "Local-first social media automation manager"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "cryptography>=44,<46",
+  "fastapi>=0.115,<1.0",
+  "httpx>=0.27,<1.0",
+  "keyring>=25,<26",
+  "uvicorn>=0.30,<1.0",
+]
+
+[project.scripts]
+sm-manager = "sm_manager.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

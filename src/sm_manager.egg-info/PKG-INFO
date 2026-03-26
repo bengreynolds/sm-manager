@@ -1,3 +1,15 @@
+Metadata-Version: 2.4
+Name: sm-manager
+Version: 0.1.0
+Summary: Local-first social media automation manager
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: cryptography<46,>=44
+Requires-Dist: fastapi<1.0,>=0.115
+Requires-Dist: httpx<1.0,>=0.27
+Requires-Dist: keyring<26,>=25
+Requires-Dist: uvicorn<1.0,>=0.30
+
 # sm-manager
 
 Cross-platform social media automation manager, designed to stay lightweight, run locally, and support both a browser-based control UI and fully headless execution.
@@ -27,10 +39,7 @@ The repository now includes a runnable Instagram-first local skeleton with:
 - package entrypoint and CLI
 - SQLite bootstrap in `runtime/sm_manager.sqlite3`
 - local test credential loader from the hidden local JSON file
-- secure secret storage using OS keyring when available, with encrypted file fallback
 - account sync for Instagram labels and usernames
-- credential import into secure local storage
-- token metadata storage and Instagram auth-readiness checks
 - Instagram dry-run publish validation that records audit history without calling the Instagram API
 - minimal FastAPI control-plane endpoints for health, accounts, and recent jobs
 
@@ -154,30 +163,6 @@ Sync Instagram test accounts from the hidden local credential file:
 .\.venv\Scripts\python.exe -m sm_manager sync-local-accounts --platform instagram
 ```
 
-Import local test passwords into the secure local secret store:
-
-```powershell
-.\.venv\Scripts\python.exe -m sm_manager import-local-credentials --platform instagram
-```
-
-Inspect the active secret backend:
-
-```powershell
-.\.venv\Scripts\python.exe -m sm_manager secret-store-status --platform instagram
-```
-
-Inspect Instagram auth readiness:
-
-```powershell
-.\.venv\Scripts\python.exe -m sm_manager instagram-auth-status --account ig_test_account_1
-```
-
-Store a local platform token for testing metadata flow:
-
-```powershell
-.\.venv\Scripts\python.exe -m sm_manager store-platform-token --platform instagram --account ig_test_account_1 --name access_token --value test_access_token_value --expires-at 2026-12-31T00:00:00+00:00
-```
-
 Run an Instagram dry-run:
 
 ```powershell
@@ -201,4 +186,3 @@ Available endpoints:
 - `GET /health`
 - `GET /accounts`
 - `GET /jobs/recent`
-- `GET /instagram/auth/status?account=...`

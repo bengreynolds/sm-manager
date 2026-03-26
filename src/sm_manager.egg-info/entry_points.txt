@@ -1,0 +1,2 @@
+[console_scripts]
+sm-manager = sm_manager.cli:main
